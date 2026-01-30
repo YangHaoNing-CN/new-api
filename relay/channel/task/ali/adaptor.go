@@ -47,10 +47,11 @@ type AliVideoInput struct {
 type AliVideoParameters struct {
 	Resolution   string `json:"resolution,omitempty"`    // 分辨率: 480P/720P/1080P（图生视频、首尾帧生视频）
 	Size         string `json:"size,omitempty"`          // 尺寸: 如 "832*480"（文生视频）
-	Duration     int    `json:"duration,omitempty"`      // 时长: 3-10秒
+	Duration     int    `json:"duration,omitempty"`      // 时长: 2-15秒(wan2.6)，5/10秒(wan2.5)，3-5秒(wanx2.1)
 	PromptExtend bool   `json:"prompt_extend,omitempty"` // 是否开启prompt智能改写
+	ShotType     string `json:"shot_type,omitempty"`     // 镜头类型: single(单镜头)/multi(多镜头)，仅wan2.6支持
 	Watermark    bool   `json:"watermark,omitempty"`     // 是否添加水印
-	Audio        *bool  `json:"audio,omitempty"`         // 是否添加音频（wan2.5）
+	Audio        *bool  `json:"audio,omitempty"`         // 是否添加音频（wan2.6/wan2.5支持）
 	Seed         int    `json:"seed,omitempty"`          // 随机数种子
 }
 
@@ -98,6 +99,7 @@ type AliMetadata struct {
 	Size         *string `json:"size,omitempty"`          // 尺寸: 如 "832*480"
 	Duration     *int    `json:"duration,omitempty"`      // 时长
 	PromptExtend *bool   `json:"prompt_extend,omitempty"` // 是否开启prompt智能改写
+	ShotType     *string `json:"shot_type,omitempty"`     // 镜头类型: single/multi（仅wan2.6支持）
 	Watermark    *bool   `json:"watermark,omitempty"`     // 是否添加水印
 	Audio        *bool   `json:"audio,omitempty"`         // 是否添加音频
 	Seed         *int    `json:"seed,omitempty"`          // 随机数种子
