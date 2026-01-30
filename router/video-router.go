@@ -23,6 +23,17 @@ func SetVideoRouter(router *gin.Engine) {
 		videoV1Router.GET("/videos/:task_id", controller.RelayTask)
 	}
 
+	// Ali DashScope official API routes - direct mapping to official API format
+	// docs: https://help.aliyun.com/zh/model-studio/developer-reference/video-generation-api
+	aliVideoRouter := router.Group("/api/v1")
+	aliVideoRouter.Use(middleware.AliVideoRequestConvert(), middleware.TokenAuth(), middleware.Distribute())
+	{
+		// 创建任务: POST /api/v1/services/aigc/video-generation/video-synthesis
+		aliVideoRouter.POST("/services/aigc/video-generation/video-synthesis", controller.RelayTask)
+		// 查询任务: GET /api/v1/tasks/{task_id}
+		aliVideoRouter.GET("/tasks/:task_id", controller.RelayTask)
+	}
+
 	klingV1Router := router.Group("/kling/v1")
 	klingV1Router.Use(middleware.KlingRequestConvert(), middleware.TokenAuth(), middleware.Distribute())
 	{
