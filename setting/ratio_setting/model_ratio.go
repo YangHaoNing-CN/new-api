@@ -277,6 +277,16 @@ var defaultModelPrice = map[string]float64{
 	"black-forest-labs/flux-1.1-pro": 0.04,
 	"gpt-4-gizmo-*":                  0.1,
 	"mj_video":                       0.8,
+	// 阿里云万相视频模型定价 (按秒计费，基础价格为720P有声视频)
+	// 实际价格 = 基础价格 * 秒数 * 分辨率倍率
+	// 分辨率倍率在 ProcessAliOtherRatios 中配置
+	"wan2.6-i2v-flash":  0.6 / 7.2,  // ¥0.6/秒 (720P有声) -> 转换为美元
+	"wan2.6-i2v":        0.6 / 7.2,  // ¥0.6/秒 (720P有声)
+	"wan2.5-i2v-preview": 0.3 / 7.2, // ¥0.3/秒 (480P有声)
+	"wan2.2-i2v-flash":  0.1 / 7.2,  // ¥0.1/秒 (480P无声)
+	"wan2.2-i2v-plus":   0.14 / 7.2, // ¥0.14/秒 (480P无声)
+	"wanx2.1-i2v-plus":  0.6 / 7.2,  // ¥0.6/秒 (720P无声)
+	"wanx2.1-i2v-turbo": 0.1 / 7.2,  // ¥0.1/秒 (480P无声)
 	"mj_imagine":                     0.1,
 	"mj_edits":                       0.1,
 	"mj_variation":                   0.1,
