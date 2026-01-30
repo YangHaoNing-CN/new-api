@@ -52,15 +52,13 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 		constant.ChannelTypeDoubaoVideo,
 		constant.ChannelTypeVidu,
 	}
-	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
-		channelTypeName := constant.GetChannelTypeName(channel.Type)
-		return testResult{
-			localErr: fmt.Errorf("%s channel test is not supported", channelTypeName),
-		}
-	}
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
 
+	// 检查是否是阿里视频模型 (wan系列)
+	isAliVideoModel := func(modelName string) bool {
+		return strings.HasPrefix(modelName, "wan2.") || strings.HasPrefix(modelName, "wanx2.")
+	}
+
+	// 如果指定了测试模型且是视频模型，使用视频测试逻辑
 	testModel = strings.TrimSpace(testModel)
 	if testModel == "" {
 		if channel.TestModel != nil && *channel.TestModel != "" {
@@ -70,10 +68,24 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 			if len(models) > 0 {
 				testModel = strings.TrimSpace(models[0])
 			}
-			if testModel == "" {
-				testModel = "gpt-4o-mini"
-			}
 		}
+	}
+	if isAliVideoModel(testModel) {
+		return testAliVideoChannel(channel, testModel, tik)
+	}
+
+	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
+		channelTypeName := constant.GetChannelTypeName(channel.Type)
+		return testResult{
+			localErr: fmt.Errorf("%s channel test is not supported", channelTypeName),
+		}
+	}
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	// testModel 已在上面初始化
+	if testModel == "" {
+		testModel = "gpt-4o-mini"
 	}
 
 	requestPath := "/v1/chat/completions"
@@ -112,6 +124,11 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 		// responses compaction models (must use /v1/responses/compact)
 		if strings.HasSuffix(testModel, ratio_setting.CompactModelSuffix) {
 			requestPath = "/v1/responses/compact"
+		}
+
+		// 阿里视频模型 (wan系列)
+		if isAliVideoModel(testModel) {
+			requestPath = "/v1/video/generations"
 		}
 	}
 	if strings.HasPrefix(requestPath, "/v1/responses/compact") {
@@ -534,6 +551,8 @@ func buildTestRequest(model string, endpointType string, channel *model.Channel)
 	}
 
 	// 自动检测逻辑（保持原有行为）
+	// 注意: 视频模型 (wan系列) 使用专门的 testAliVideoChannel 函数测试
+
 	if strings.Contains(strings.ToLower(model), "rerank") {
 		return &dto.RerankRequest{
 			Model:     model,
@@ -757,4 +776,103 @@ func AutomaticallyTestChannels() {
 			}
 		}
 	})
+}
+
+// testAliVideoChannel 测试阿里视频模型渠道 (wan系列)
+// 视频模型是异步任务，只需验证任务提交成功即可
+func testAliVideoChannel(channel *model.Channel, testModel string, tik time.Time) testResult {
+	baseURL := channel.GetBaseURL()
+	if baseURL == "" {
+		baseURL = "https://dashscope.aliyuncs.com"
+	}
+
+	// 构建视频生成请求
+	requestBody := map[string]interface{}{
+		"model": testModel,
+		"input": map[string]interface{}{
+			"prompt":  "测试视频生成",
+			"img_url": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/wpimhv/rap.png",
+		},
+		"parameters": map[string]interface{}{
+			"resolution": "720P",
+			"duration":   2, // 最短时长，节省费用
+		},
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("marshal request failed: %v", err),
+		}
+	}
+
+	// 构建请求
+	reqURL := fmt.Sprintf("%s/api/v1/services/aigc/video-generation/video-synthesis", baseURL)
+	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("create request failed: %v", err),
+		}
+	}
+
+	req.Header.Set("Authorization", "Bearer "+channel.Key)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-DashScope-Async", "enable")
+
+	// 发送请求
+	client := &http.Client{Timeout: 30 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("request failed: %v", err),
+		}
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("read response failed: %v", err),
+		}
+	}
+
+	// 解析响应
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return testResult{
+			localErr: fmt.Errorf("parse response failed: %v, body: %s", err, string(respBody)),
+		}
+	}
+
+	// 检查是否有错误
+	if code, ok := result["code"].(string); ok && code != "" {
+		message, _ := result["message"].(string)
+		return testResult{
+			localErr:    fmt.Errorf("API error: %s - %s", code, message),
+			newAPIError: types.NewOpenAIError(fmt.Errorf("%s: %s", code, message), types.ErrorCode(code), resp.StatusCode),
+		}
+	}
+
+	// 检查是否返回了 task_id
+	output, _ := result["output"].(map[string]interface{})
+	taskID, _ := output["task_id"].(string)
+	if taskID == "" {
+		return testResult{
+			localErr: fmt.Errorf("no task_id in response: %s", string(respBody)),
+		}
+	}
+
+	tok := time.Now()
+	milliseconds := tok.Sub(tik).Milliseconds()
+	common.SysLog(fmt.Sprintf("video channel test success: channel_id=%d model=%s task_id=%s time=%dms",
+		channel.Id, testModel, taskID, milliseconds))
+
+	// 返回成功结果
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	return testResult{
+		context:     c,
+		localErr:    nil,
+		newAPIError: nil,
+	}
 }
