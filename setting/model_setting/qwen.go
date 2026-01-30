@@ -23,6 +23,8 @@ var defaultQwenSettings = QwenSettings{
 		"qwen-image-edit-plus",
 		"qwen-image-edit-plus-2025-12-15",
 		"qwen-image-edit-plus-2025-10-30",
+		// FLUX 系列 - flux-schnell 是同步返回的快速模型
+		"flux-schnell",
 	},
 }
 
