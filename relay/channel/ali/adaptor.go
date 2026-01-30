@@ -85,17 +85,30 @@ func (a *Adaptor) GetRequestURL(info *relaycommon.RelayInfo) (string, error) {
 		case constant.RelayModeRerank:
 			fullRequestURL = fmt.Sprintf("%s/api/v1/services/rerank/text-rerank/text-rerank", info.ChannelBaseUrl)
 		case constant.RelayModeImagesGenerations:
-			if isSyncImageModel(info.OriginModelName) {
+			// FLUX 系列模型使用专用端点
+			if isFluxModel(info.OriginModelName) {
+				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/image2image/flux-image-generation", info.ChannelBaseUrl)
+			} else if isSyncImageModel(info.OriginModelName) {
+				// 同步图片模型 (z-image, qwen-image, wan2.6 等)
 				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/multimodal-generation/generation", info.ChannelBaseUrl)
 			} else {
+				// 异步文生图模型 (wanx2.1-t2i-turbo, wanx2.1-t2i-plus, wanx-v1 等)
 				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/text2image/image-synthesis", info.ChannelBaseUrl)
 			}
 		case constant.RelayModeImagesEdits:
-			if isOldWanModel(info.OriginModelName) {
+			// FLUX 系列图片编辑模型 (flux-inpaint, flux-redux)
+			if isFluxModel(info.OriginModelName) {
+				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/image2image/flux-image-generation", info.ChannelBaseUrl)
+			} else if isOldWanModel(info.OriginModelName) {
+				// 旧版万相图片编辑 (wanx2.0 以下)
 				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/image2image/image-synthesis", info.ChannelBaseUrl)
+			} else if isWanImageEditModel(info.OriginModelName) {
+				// 新版万相图片编辑 (wanx2.1-imageedit-v1, wanx2.0-imageedit-plus 等)
+				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/image-generation/generation", info.ChannelBaseUrl)
 			} else if isWanModel(info.OriginModelName) {
 				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/image-generation/generation", info.ChannelBaseUrl)
 			} else {
+				// qwen-image-edit 等同步编辑模型
 				fullRequestURL = fmt.Sprintf("%s/api/v1/services/aigc/multimodal-generation/generation", info.ChannelBaseUrl)
 			}
 		case constant.RelayModeCompletions:
@@ -119,13 +132,19 @@ func (a *Adaptor) SetupRequestHeader(c *gin.Context, req *http.Header, info *rel
 	}
 	if info.RelayMode == constant.RelayModeImagesGenerations {
 		if isSyncImageModel(info.OriginModelName) {
-
+			// 同步模型不需要异步头 (z-image, qwen-image, wan2.6, flux-schnell)
 		} else {
+			// 异步模型需要设置异步头
 			req.Set("X-DashScope-Async", "enable")
 		}
 	}
 	if info.RelayMode == constant.RelayModeImagesEdits {
-		if isWanModel(info.OriginModelName) {
+		// 万相图片编辑和非同步FLUX模型需要异步头
+		if isWanModel(info.OriginModelName) || isWanImageEditModel(info.OriginModelName) {
+			req.Set("X-DashScope-Async", "enable")
+		}
+		// FLUX 图片编辑 (flux-inpaint, flux-redux) - 非 flux-schnell
+		if isFluxModel(info.OriginModelName) && !isSyncImageModel(info.OriginModelName) {
 			req.Set("X-DashScope-Async", "enable")
 		}
 		req.Set("Content-Type", "application/json")
@@ -158,15 +177,28 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 
 func (a *Adaptor) ConvertImageRequest(c *gin.Context, info *relaycommon.RelayInfo, request dto.ImageRequest) (any, error) {
 	if info.RelayMode == constant.RelayModeImagesGenerations {
+		// 判断是否为同步图片模型
 		if isSyncImageModel(info.OriginModelName) {
 			a.IsSyncImageModel = true
 		}
+
+		// FLUX 系列模型使用专用请求格式
+		if isFluxModel(info.OriginModelName) {
+			return oaiImage2FluxImageRequest(info, request)
+		}
+
 		aliRequest, err := oaiImage2AliImageRequest(info, request, a.IsSyncImageModel)
 		if err != nil {
 			return nil, fmt.Errorf("convert image request to async ali image request failed: %w", err)
 		}
 		return aliRequest, nil
 	} else if info.RelayMode == constant.RelayModeImagesEdits {
+		// FLUX 图片编辑模型 (flux-inpaint, flux-redux)
+		if isFluxModel(info.OriginModelName) {
+			a.IsSyncImageModel = isSyncImageModel(info.OriginModelName)
+			return oaiImage2FluxImageEditRequest(c, info, request)
+		}
+
 		if isOldWanModel(info.OriginModelName) {
 			return oaiFormEdit2WanxImageEdit(c, info, request)
 		}

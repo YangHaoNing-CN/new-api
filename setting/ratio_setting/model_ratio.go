@@ -294,6 +294,21 @@ var defaultModelPrice = map[string]float64{
 	"wan2.2-t2v-plus":    0.14 / 7.2, // ¥0.14/秒 (480P无声)
 	"wanx2.1-t2v-plus":   0.6 / 7.2,  // ¥0.6/秒 (720P无声)
 	"wanx2.1-t2v-turbo":  0.1 / 7.2,  // ¥0.1/秒 (480P无声)
+	// ========== 文生图 (t2i) ==========
+	"wanx2.1-t2i-turbo": 0.14 / 7.2, // ¥0.14/张 (512*1024以下基础价，按分辨率倍率计费)
+	"wanx2.1-t2i-plus":  0.14 / 7.2, // ¥0.14/张 (512*1024以下基础价)
+	"wanx-v1":           0.08 / 7.2, // ¥0.08/张 (1024*1024)
+	"flux-schnell":      0.06 / 7.2, // ¥0.06/张
+	"flux-dev":          0.12 / 7.2, // ¥0.12/张
+	"flux-merged":       0.12 / 7.2, // ¥0.12/张
+	// ========== 图片编辑 (Image Edit) ==========
+	"wanx2.1-imageedit-v1":       0.24 / 7.2, // ¥0.24/张
+	"wanx2.0-imageedit-plus":     0.18 / 7.2, // ¥0.18/张
+	"wanx-style-repaint-v1":      0.16 / 7.2, // ¥0.16/张
+	"wanx-background-generation": 0.12 / 7.2, // ¥0.12/张
+	"wanx-sketch-to-image-v1":    0.12 / 7.2, // ¥0.12/张
+	"flux-inpaint":               0.12 / 7.2, // ¥0.12/张
+	"flux-redux":                 0.06 / 7.2, // ¥0.06/张
 	"mj_imagine":                     0.1,
 	"mj_edits":                       0.1,
 	"mj_variation":                   0.1,

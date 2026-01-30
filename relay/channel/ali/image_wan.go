@@ -39,9 +39,27 @@ func oaiFormEdit2WanxImageEdit(c *gin.Context, info *relaycommon.RelayInfo, requ
 }
 
 func isOldWanModel(modelName string) bool {
-	return strings.Contains(modelName, "wan") && !strings.Contains(modelName, "wan2.6")
+	return strings.Contains(modelName, "wan") && !strings.Contains(modelName, "wan2.6") && !isFluxModel(modelName)
 }
 
 func isWanModel(modelName string) bool {
-	return strings.Contains(modelName, "wan")
+	return strings.Contains(modelName, "wan") && !isFluxModel(modelName)
+}
+
+// isFluxModel 判断是否为 FLUX 系列模型
+func isFluxModel(modelName string) bool {
+	return strings.HasPrefix(modelName, "flux-")
+}
+
+// isWanT2IModel 判断是否为万相文生图模型
+func isWanT2IModel(modelName string) bool {
+	return strings.HasPrefix(modelName, "wanx2.1-t2i-") || modelName == "wanx-v1"
+}
+
+// isWanImageEditModel 判断是否为万相图片编辑模型
+func isWanImageEditModel(modelName string) bool {
+	return strings.Contains(modelName, "imageedit") ||
+		modelName == "wanx-style-repaint-v1" ||
+		modelName == "wanx-background-generation" ||
+		modelName == "wanx-sketch-to-image-v1"
 }

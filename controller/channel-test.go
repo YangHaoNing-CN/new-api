@@ -53,9 +53,31 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 		constant.ChannelTypeVidu,
 	}
 
-	// 检查是否是阿里视频模型 (wan系列)
+	// 检查是否是阿里视频模型 (wan系列视频)
 	isAliVideoModel := func(modelName string) bool {
-		return strings.HasPrefix(modelName, "wan2.") || strings.HasPrefix(modelName, "wanx2.")
+		// wan2.x-i2v (图生视频) 或 wan2.x-t2v (文生视频)
+		return (strings.HasPrefix(modelName, "wan2.") || strings.HasPrefix(modelName, "wanx2.")) &&
+			(strings.Contains(modelName, "-i2v") || strings.Contains(modelName, "-t2v"))
+	}
+
+	// 检查是否是阿里图片生成模型 (wan系列图片/flux系列)
+	isAliImageModel := func(modelName string) bool {
+		// wanx2.1-t2i (文生图)
+		if strings.HasPrefix(modelName, "wanx2.1-t2i-") || modelName == "wanx-v1" {
+			return true
+		}
+		// flux 系列
+		if strings.HasPrefix(modelName, "flux-") {
+			return true
+		}
+		// 图片编辑模型
+		if strings.Contains(modelName, "imageedit") ||
+			modelName == "wanx-style-repaint-v1" ||
+			modelName == "wanx-background-generation" ||
+			modelName == "wanx-sketch-to-image-v1" {
+			return true
+		}
+		return false
 	}
 
 	// 如果指定了测试模型且是视频模型，使用视频测试逻辑
@@ -72,6 +94,9 @@ func testChannel(channel *model.Channel, testModel string, endpointType string) 
 	}
 	if isAliVideoModel(testModel) {
 		return testAliVideoChannel(channel, testModel, tik)
+	}
+	if isAliImageModel(testModel) {
+		return testAliImageChannel(channel, testModel, tik)
 	}
 
 	if lo.Contains(unsupportedTestChannelTypes, channel.Type) {
@@ -885,6 +910,171 @@ func testAliVideoChannel(channel *model.Channel, testModel string, tik time.Time
 	milliseconds := tok.Sub(tik).Milliseconds()
 	common.SysLog(fmt.Sprintf("video channel test success: channel_id=%d model=%s task_id=%s time=%dms",
 		channel.Id, testModel, taskID, milliseconds))
+
+	// 返回成功结果
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	return testResult{
+		context:     c,
+		localErr:    nil,
+		newAPIError: nil,
+	}
+}
+
+// testAliImageChannel 测试阿里图片生成模型渠道 (wan系列图片/flux系列)
+// 异步图片模型只需验证任务提交成功即可，同步模型验证返回图片
+func testAliImageChannel(channel *model.Channel, testModel string, tik time.Time) testResult {
+	baseURL := channel.GetBaseURL()
+	if baseURL == "" {
+		baseURL = "https://dashscope.aliyuncs.com"
+	}
+
+	// 判断模型类型和对应的 API 端点
+	var reqURL string
+	var requestBody map[string]interface{}
+	needAsync := true // 是否需要异步头
+
+	switch {
+	case strings.HasPrefix(testModel, "flux-"):
+		// FLUX 系列模型
+		reqURL = fmt.Sprintf("%s/api/v1/services/aigc/image2image/flux-image-generation", baseURL)
+		requestBody = map[string]interface{}{
+			"model": testModel,
+			"input": map[string]interface{}{
+				"prompt": "A beautiful sunset over the ocean",
+			},
+			"parameters": map[string]interface{}{
+				"size": "512*512", // 最小尺寸，节省费用
+				"n":    1,
+			},
+		}
+		// flux-schnell 是同步模型
+		if testModel == "flux-schnell" {
+			needAsync = false
+		}
+
+	case strings.HasPrefix(testModel, "wanx2.1-t2i-") || testModel == "wanx-v1":
+		// 万相文生图模型
+		reqURL = fmt.Sprintf("%s/api/v1/services/aigc/text2image/image-synthesis", baseURL)
+		requestBody = map[string]interface{}{
+			"model": testModel,
+			"input": map[string]interface{}{
+				"prompt": "一只可爱的小猫",
+			},
+			"parameters": map[string]interface{}{
+				"size": "512*512",
+				"n":    1,
+			},
+		}
+
+	case strings.Contains(testModel, "imageedit") ||
+		testModel == "wanx-style-repaint-v1" ||
+		testModel == "wanx-background-generation" ||
+		testModel == "wanx-sketch-to-image-v1":
+		// 图片编辑模型需要输入图片，使用测试图片
+		reqURL = fmt.Sprintf("%s/api/v1/services/aigc/image-generation/generation", baseURL)
+		requestBody = map[string]interface{}{
+			"model": testModel,
+			"input": map[string]interface{}{
+				"prompt": "将背景改为蓝天白云",
+				"images": []string{"https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/wpimhv/rap.png"},
+			},
+			"parameters": map[string]interface{}{
+				"n": 1,
+			},
+		}
+
+	default:
+		return testResult{
+			localErr: fmt.Errorf("unsupported image model: %s", testModel),
+		}
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("marshal request failed: %v", err),
+		}
+	}
+
+	// 构建请求
+	req, err := http.NewRequest("POST", reqURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("create request failed: %v", err),
+		}
+	}
+
+	req.Header.Set("Authorization", "Bearer "+channel.Key)
+	req.Header.Set("Content-Type", "application/json")
+	if needAsync {
+		req.Header.Set("X-DashScope-Async", "enable")
+	}
+
+	// 发送请求
+	client := &http.Client{Timeout: 60 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("request failed: %v", err),
+		}
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return testResult{
+			localErr: fmt.Errorf("read response failed: %v", err),
+		}
+	}
+
+	// 解析响应
+	var result map[string]interface{}
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return testResult{
+			localErr: fmt.Errorf("parse response failed: %v, body: %s", err, string(respBody)),
+		}
+	}
+
+	// 检查是否有错误
+	if code, ok := result["code"].(string); ok && code != "" {
+		message, _ := result["message"].(string)
+		return testResult{
+			localErr:    fmt.Errorf("API error: %s - %s", code, message),
+			newAPIError: types.NewOpenAIError(fmt.Errorf("%s: %s", code, message), types.ErrorCode(code), resp.StatusCode),
+		}
+	}
+
+	tok := time.Now()
+	milliseconds := tok.Sub(tik).Milliseconds()
+
+	if needAsync {
+		// 异步模型检查是否返回了 task_id
+		output, _ := result["output"].(map[string]interface{})
+		taskID, _ := output["task_id"].(string)
+		if taskID == "" {
+			return testResult{
+				localErr: fmt.Errorf("no task_id in response: %s", string(respBody)),
+			}
+		}
+		common.SysLog(fmt.Sprintf("image channel test success (async): channel_id=%d model=%s task_id=%s time=%dms",
+			channel.Id, testModel, taskID, milliseconds))
+	} else {
+		// 同步模型检查是否返回了图片
+		output, _ := result["output"].(map[string]interface{})
+		results, _ := output["results"].([]interface{})
+		if len(results) == 0 {
+			// 尝试从 choices 获取
+			choices, _ := output["choices"].([]interface{})
+			if len(choices) == 0 {
+				return testResult{
+					localErr: fmt.Errorf("no image in response: %s", string(respBody)),
+				}
+			}
+		}
+		common.SysLog(fmt.Sprintf("image channel test success (sync): channel_id=%d model=%s time=%dms",
+			channel.Id, testModel, milliseconds))
+	}
 
 	// 返回成功结果
 	w := httptest.NewRecorder()
