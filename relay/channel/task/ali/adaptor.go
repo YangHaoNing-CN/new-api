@@ -197,6 +197,7 @@ func ProcessAliOtherRatios(aliReq *AliVideoRequest) (map[string]float64, error) 
 	// 基础价格在 setting/ratio_setting/model_ratio.go 中配置
 	// 这里配置的是相对于基础分辨率的倍率
 	aliRatios := map[string]map[string]float64{
+		// ========== 图生视频 (i2v) ==========
 		// wan2.6系列 - 基础: 720P ¥0.6/秒(有声)
 		// 720P: ¥0.6/秒, 1080P: ¥1.0/秒 → 1080P倍率 = 1.0/0.6 ≈ 1.667
 		"wan2.6-i2v-flash": {
@@ -209,11 +210,6 @@ func ProcessAliOtherRatios(aliReq *AliVideoRequest) (map[string]float64, error) 
 		},
 		// wan2.5系列 - 基础: 480P ¥0.3/秒
 		// 480P: ¥0.3/秒, 720P: ¥0.6/秒, 1080P: ¥1.0/秒
-		"wan2.5-t2v-preview": {
-			"480P":  1,
-			"720P":  2,      // 0.6/0.3 = 2
-			"1080P": 3.333,  // 1.0/0.3 ≈ 3.333
-		},
 		"wan2.5-i2v-preview": {
 			"480P":  1,
 			"720P":  2,
@@ -224,16 +220,12 @@ func ProcessAliOtherRatios(aliReq *AliVideoRequest) (map[string]float64, error) 
 		// 480P: ¥0.1/秒, 720P: ¥0.2/秒, 1080P: ¥0.24/秒
 		"wan2.2-i2v-flash": {
 			"480P":  1,
-			"720P":  2,    // 0.2/0.1 = 2
-			"1080P": 2.4,  // 0.24/0.1 = 2.4
+			"720P":  2,
+			"1080P": 2.4,
 		},
 		// wan2.2-i2v-plus - 基础: 480P ¥0.14/秒
 		// 480P: ¥0.14/秒, 1080P: ¥0.7/秒
 		"wan2.2-i2v-plus": {
-			"480P":  1,
-			"1080P": 5,  // 0.7/0.14 = 5
-		},
-		"wan2.2-t2v-plus": {
 			"480P":  1,
 			"1080P": 5,
 		},
@@ -244,7 +236,7 @@ func ProcessAliOtherRatios(aliReq *AliVideoRequest) (map[string]float64, error) 
 		},
 		"wan2.2-s2v": {
 			"480P": 1,
-			"720P": 1.8,  // 0.9/0.5
+			"720P": 1.8,
 		},
 		// wanx2.1系列
 		// wanx2.1-i2v-plus - 只有720P: ¥0.6/秒
@@ -252,8 +244,37 @@ func ProcessAliOtherRatios(aliReq *AliVideoRequest) (map[string]float64, error) 
 			"720P": 1,
 		},
 		// wanx2.1-i2v-turbo - 基础: 480P ¥0.1/秒
-		// 480P: ¥0.1/秒, 720P: ¥0.2/秒
 		"wanx2.1-i2v-turbo": {
+			"480P": 1,
+			"720P": 2,
+		},
+
+		// ========== 文生视频 (t2v) ==========
+		// wan2.6-t2v - 基础: 720P ¥0.6/秒(有声)
+		// 720P: ¥0.6/秒, 1080P: ¥1.0/秒
+		"wan2.6-t2v": {
+			"720P":  1,
+			"1080P": 1.667,
+		},
+		// wan2.5-t2v-preview - 基础: 480P ¥0.3/秒
+		// 480P: ¥0.3/秒, 720P: ¥0.6/秒, 1080P: ¥1.0/秒
+		"wan2.5-t2v-preview": {
+			"480P":  1,
+			"720P":  2,
+			"1080P": 3.333,
+		},
+		// wan2.2-t2v-plus - 基础: 480P ¥0.14/秒
+		// 480P: ¥0.14/秒, 1080P: ¥0.7/秒
+		"wan2.2-t2v-plus": {
+			"480P":  1,
+			"1080P": 5,
+		},
+		// wanx2.1-t2v-plus - 只有720P: ¥0.6/秒
+		"wanx2.1-t2v-plus": {
+			"720P": 1,
+		},
+		// wanx2.1-t2v-turbo - 基础: 480P ¥0.1/秒
+		"wanx2.1-t2v-turbo": {
 			"480P": 1,
 			"720P": 2,
 		},
@@ -312,15 +333,21 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 		}
 	} else {
 		// 根据模型设置默认分辨率
-		if strings.Contains(req.Model, "t2v") { // text to video
-			if strings.HasPrefix(req.Model, "wan2.5") {
-				aliReq.Parameters.Size = "1920*1080"
+		if strings.Contains(req.Model, "t2v") { // text to video (使用 size 参数)
+			if strings.HasPrefix(req.Model, "wan2.6") {
+				aliReq.Parameters.Size = "1920*1080" // wan2.6-t2v: 720P/1080P
+			} else if strings.HasPrefix(req.Model, "wan2.5") {
+				aliReq.Parameters.Size = "1920*1080" // wan2.5-t2v: 480P/720P/1080P
 			} else if strings.HasPrefix(req.Model, "wan2.2") {
-				aliReq.Parameters.Size = "1920*1080"
+				aliReq.Parameters.Size = "1920*1080" // wan2.2-t2v: 480P/1080P
+			} else if strings.HasPrefix(req.Model, "wanx2.1-t2v-plus") {
+				aliReq.Parameters.Size = "1280*720" // wanx2.1-t2v-plus: 720P only
+			} else if strings.HasPrefix(req.Model, "wanx2.1-t2v-turbo") {
+				aliReq.Parameters.Size = "1280*720" // wanx2.1-t2v-turbo: 480P/720P
 			} else {
 				aliReq.Parameters.Size = "1280*720"
 			}
-		} else { // image to video (i2v)
+		} else { // image to video (i2v) (使用 resolution 参数)
 			if strings.HasPrefix(req.Model, "wan2.6-i2v-flash") {
 				aliReq.Parameters.Resolution = "1080P" // wan2.6-i2v-flash: 720P/1080P
 			} else if strings.HasPrefix(req.Model, "wan2.6-i2v") {

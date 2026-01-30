@@ -786,17 +786,36 @@ func testAliVideoChannel(channel *model.Channel, testModel string, tik time.Time
 		baseURL = "https://dashscope.aliyuncs.com"
 	}
 
+	// 判断是文生视频(t2v)还是图生视频(i2v)
+	isT2V := strings.Contains(testModel, "t2v")
+
 	// 构建视频生成请求
-	requestBody := map[string]interface{}{
-		"model": testModel,
-		"input": map[string]interface{}{
-			"prompt":  "测试视频生成",
-			"img_url": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/wpimhv/rap.png",
-		},
-		"parameters": map[string]interface{}{
-			"resolution": "720P",
-			"duration":   2, // 最短时长，节省费用
-		},
+	var requestBody map[string]interface{}
+	if isT2V {
+		// 文生视频请求 (不需要图片)
+		requestBody = map[string]interface{}{
+			"model": testModel,
+			"input": map[string]interface{}{
+				"prompt": "一只可爱的小猫在草地上奔跑",
+			},
+			"parameters": map[string]interface{}{
+				"size":     "1280*720", // t2v 使用 size 参数
+				"duration": 2,          // 最短时长，节省费用
+			},
+		}
+	} else {
+		// 图生视频请求 (需要图片)
+		requestBody = map[string]interface{}{
+			"model": testModel,
+			"input": map[string]interface{}{
+				"prompt":  "测试视频生成",
+				"img_url": "https://help-static-aliyun-doc.aliyuncs.com/file-manage-files/zh-CN/20250925/wpimhv/rap.png",
+			},
+			"parameters": map[string]interface{}{
+				"resolution": "720P", // i2v 使用 resolution 参数
+				"duration":   2,      // 最短时长，节省费用
+			},
+		}
 	}
 
 	jsonData, err := json.Marshal(requestBody)
