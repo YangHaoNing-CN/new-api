@@ -13,10 +13,10 @@ var ModelList = []string{
 	"qwen-flash",        // 通义千问Flash，速度最快成本极低，阶梯计价
 	"qwen-turbo",        // 通义千问Turbo，建议替换为Flash，无阶梯计价
 	"qwen-turbo-latest", // 通义千问Turbo最新快照
-	// ========== 长文本 & 深度研究 ==========
-	"qwen-long",          // 通义千问长文本模型，无阶梯计价
-	"qwen-long-latest",   // 通义千问长文本最新快照
-	"qwen-deep-research", // 通义千问深度研究，适合复杂分析任��
+	// ========== 长文本 ==========
+	"qwen-long",        // 通义千问长文本模型，无阶梯计价
+	"qwen-long-latest", // 通义千问长文本最新快照
+	// 注意: qwen-deep-research 不支持 OpenAI 兼容模式，已移除
 	// ========== Qwen3 开源系列 ==========
 	"qwen3-235b-a22b", // Qwen3 MoE 235B (激活22B)，支持思考/非思考模式
 	"qwen3-32b",       // Qwen3 32B Dense，支持思考/非思考模式
@@ -26,7 +26,7 @@ var ModelList = []string{
 	"qwen3-4b",        // Qwen3 4B Dense
 	"qwen3-1.7b",      // Qwen3 1.7B Dense
 	"qwen3-0.6b",      // Qwen3 0.6B Dense，最轻量
-	"qwq-32b",         // QwQ 32B，专注推理和思考
+	// 注意: qwq-32b 只支持流式调用，已移除
 	// ========== Vision 主力模型 ==========
 	"qwen3-vl-plus",     // 通义千问3视觉Plus，图文理解，阶梯计价
 	"qwen3-vl-flash",    // 通义千问3视觉Flash，快速图文理解，阶梯计价
