@@ -64,20 +64,32 @@ const ModelPricingTable = ({
       const groupRatioValue =
         groupRatio && groupRatio[group] ? groupRatio[group] : 1;
 
+      const hasTiered =
+        modelData?.tiered_pricing && modelData.tiered_pricing.length > 0;
+
       return {
         key: group,
         group: group,
         ratio: groupRatioValue,
         billingType:
           modelData?.quota_type === 0
-            ? t('按量计费')
+            ? hasTiered
+              ? t('阶梯计价')
+              : t('按量计费')
             : modelData?.quota_type === 1
               ? t('按次计费')
               : '-',
-        inputPrice: modelData?.quota_type === 0 ? priceData.inputPrice : '-',
+        inputPrice:
+          modelData?.quota_type === 0
+            ? hasTiered
+              ? priceData.inputPrice + t('起')
+              : priceData.inputPrice
+            : '-',
         outputPrice:
           modelData?.quota_type === 0
-            ? priceData.completionPrice || priceData.outputPrice
+            ? hasTiered
+              ? (priceData.completionPrice || priceData.outputPrice) + t('起')
+              : priceData.completionPrice || priceData.outputPrice
             : '-',
         fixedPrice: modelData?.quota_type === 1 ? priceData.price : '-',
       };
@@ -195,16 +207,9 @@ const ModelPricingTable = ({
     )
       return null;
 
-    const firstGroup = Object.keys(usableGroup || {}).find(
-      (g) =>
-        g !== '' &&
-        g !== 'auto' &&
-        modelEnableGroups.includes(g),
-    );
-    const grpRatio =
-      firstGroup && groupRatio && groupRatio[firstGroup]
-        ? groupRatio[firstGroup]
-        : 1;
+    const availableGroups = Object.keys(usableGroup || {})
+      .filter((g) => g !== '' && g !== 'auto')
+      .filter((g) => modelEnableGroups.includes(g));
 
     const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
     let symbol = '$';
@@ -218,32 +223,51 @@ const ModelPricingTable = ({
       }
     }
 
-    const tieredData = modelData.tiered_pricing.map((tier, idx) => {
-      const prevMax =
-        idx > 0 ? modelData.tiered_pricing[idx - 1].max_tokens : 0;
-      const tierInputUSD = tier.input_ratio * 2 * grpRatio;
-      const tierOutputUSD =
-        tier.input_ratio * tier.completion_ratio * 2 * grpRatio;
-      const numIn =
-        parseFloat(displayPrice(tierInputUSD).toString().replace(/[^0-9.]/g, '')) /
-        unitDivisor;
-      const numOut =
-        parseFloat(
-          displayPrice(tierOutputUSD).toString().replace(/[^0-9.]/g, ''),
-        ) / unitDivisor;
+    // 构建 分组×阶梯 交叉数据
+    const tieredData = [];
+    availableGroups.forEach((group) => {
+      const grpRatio =
+        groupRatio && groupRatio[group] ? groupRatio[group] : 1;
+      modelData.tiered_pricing.forEach((tier, idx) => {
+        const prevMax =
+          idx > 0 ? modelData.tiered_pricing[idx - 1].max_tokens : 0;
+        const tierInputUSD = tier.input_ratio * 2 * grpRatio;
+        const tierOutputUSD =
+          tier.input_ratio * tier.completion_ratio * 2 * grpRatio;
+        const numIn =
+          parseFloat(
+            displayPrice(tierInputUSD).toString().replace(/[^0-9.]/g, ''),
+          ) / unitDivisor;
+        const numOut =
+          parseFloat(
+            displayPrice(tierOutputUSD).toString().replace(/[^0-9.]/g, ''),
+          ) / unitDivisor;
 
-      return {
-        key: idx,
-        range:
-          tier.max_tokens === 0
-            ? `>${formatTokens(prevMax)}`
-            : `${formatTokens(prevMax)}~${formatTokens(tier.max_tokens)}`,
-        inputPrice: `${symbol}${numIn.toFixed(4)}`,
-        outputPrice: `${symbol}${numOut.toFixed(4)}`,
-      };
+        tieredData.push({
+          key: `${group}-${idx}`,
+          group,
+          ratio: grpRatio,
+          range:
+            tier.max_tokens === 0
+              ? `>${formatTokens(prevMax)}`
+              : `${formatTokens(prevMax)}~${formatTokens(tier.max_tokens)}`,
+          inputPrice: `${symbol}${numIn.toFixed(4)}`,
+          outputPrice: `${symbol}${numOut.toFixed(4)}`,
+        });
+      });
     });
 
     const tieredColumns = [
+      {
+        title: t('分组'),
+        dataIndex: 'group',
+        render: (text) => (
+          <Tag color='white' size='small' shape='circle'>
+            {text}
+            {t('分组')}
+          </Tag>
+        ),
+      },
       {
         title: t('Token范围'),
         dataIndex: 'range',
@@ -278,6 +302,18 @@ const ModelPricingTable = ({
         ),
       },
     ];
+
+    if (showRatio) {
+      tieredColumns.splice(1, 0, {
+        title: t('倍率'),
+        dataIndex: 'ratio',
+        render: (text) => (
+          <Tag color='white' size='small' shape='circle'>
+            {text}x
+          </Tag>
+        ),
+      });
+    }
 
     return (
       <div className='mb-4'>
