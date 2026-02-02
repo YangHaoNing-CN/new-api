@@ -69,13 +69,8 @@ var ModelList = []string{
 	"flux-dev",          // FLUX开发版，文生图
 	"flux-merged",       // FLUX融合版，文生图
 	// ========== 图片编辑模型 (Image Edit) ==========
-	"wanx2.1-imageedit-v1",       // 万相2.1图像编辑
-	"wanx2.0-imageedit-plus",     // 万相2.0图像编辑
-	"wanx-style-repaint-v1",      // 涂鸦作画/风格重绘
-	"wanx-background-generation", // 图像背景生成
-	"wanx-sketch-to-image-v1",    // 线稿生成图像
-	"flux-inpaint",               // FLUX图像修复
-	"flux-redux",                 // FLUX图像变体
+	"wanx-style-repaint-v1",   // 涂鸦作画/风格重绘
+	"wanx-sketch-to-image-v1", // 线稿生成图像
 }
 
 var ChannelName = "ali"
