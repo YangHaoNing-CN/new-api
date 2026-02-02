@@ -157,16 +157,14 @@ func (a *Adaptor) ConvertOpenAIRequest(c *gin.Context, info *relaycommon.RelayIn
 		return nil, errors.New("request is nil")
 	}
 	// docs: https://bailian.console.aliyun.com/?tab=api#/api/?type=model&url=2712216
-	// fix: InternalError.Algo.InvalidParameter: The value of the enable_thinking parameter is restricted to True.
-	//if strings.Contains(request.Model, "thinking") {
-	//	request.EnableThinking = true
-	//	request.Stream = true
-	//	info.IsStream = true
-	//}
-	//// fix: ali parameter.enable_thinking must be set to false for non-streaming calls
-	//if !info.IsStream {
-	//	request.EnableThinking = false
-	//}
+	// fix: ali parameter.enable_thinking must be set to false for non-streaming calls
+	// 阿里云 Qwen3 模型在非流式调用时不支持 enable_thinking=true
+	if !info.IsStream && len(request.EnableThinking) > 0 {
+		// 检查是否为 true
+		if string(request.EnableThinking) == "true" {
+			request.EnableThinking = []byte("false")
+		}
+	}
 
 	switch info.RelayMode {
 	default:
