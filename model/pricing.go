@@ -14,6 +14,12 @@ import (
 	"github.com/QuantumNous/new-api/types"
 )
 
+type PricingTier struct {
+	MaxTokens       int     `json:"max_tokens"`
+	InputRatio      float64 `json:"input_ratio"`
+	CompletionRatio float64 `json:"completion_ratio"`
+}
+
 type Pricing struct {
 	ModelName              string                  `json:"model_name"`
 	Description            string                  `json:"description,omitempty"`
@@ -25,6 +31,7 @@ type Pricing struct {
 	ModelPrice             float64                 `json:"model_price"`
 	OwnerBy                string                  `json:"owner_by"`
 	CompletionRatio        float64                 `json:"completion_ratio"`
+	TieredPricing          []PricingTier           `json:"tiered_pricing,omitempty"`
 	EnableGroup            []string                `json:"enable_groups"`
 	SupportedEndpointTypes []constant.EndpointType `json:"supported_endpoint_types"`
 }
@@ -290,6 +297,16 @@ func updatePricing() {
 			pricing.ModelRatio = modelRatio
 			pricing.CompletionRatio = ratio_setting.GetCompletionRatio(model)
 			pricing.QuotaType = 0
+		}
+		// 填充阶梯计价信息
+		if tiers := ratio_setting.GetTieredPricingTiers(model); tiers != nil {
+			for _, t := range tiers {
+				pricing.TieredPricing = append(pricing.TieredPricing, PricingTier{
+					MaxTokens:       t.MaxTokens,
+					InputRatio:      t.InputRatio,
+					CompletionRatio: t.CompletionRatio,
+				})
+			}
 		}
 		pricingMap = append(pricingMap, pricing)
 	}

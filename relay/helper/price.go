@@ -79,6 +79,11 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 			}
 		}
 		completionRatio = ratio_setting.GetCompletionRatio(info.OriginModelName)
+		// 阶梯计价: 根据 promptTokens 调整 modelRatio 和 completionRatio
+		if tieredInput, tieredCompletion, hasTier := ratio_setting.GetTieredPricing(info.OriginModelName, promptTokens); hasTier {
+			modelRatio = tieredInput
+			completionRatio = tieredCompletion
+		}
 		cacheRatio, _ = ratio_setting.GetCacheRatio(info.OriginModelName)
 		cacheCreationRatio, _ = ratio_setting.GetCreateCacheRatio(info.OriginModelName)
 		cacheCreationRatio5m = cacheCreationRatio

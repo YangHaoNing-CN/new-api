@@ -200,8 +200,88 @@ var defaultModelRatio = map[string]float64{
 	"glm-4-long":                                0.001 * RMB,
 	"glm-4-flash":                               0,
 	"glm-4v-plus":                               0.01 * RMB,
-	"qwen-turbo":                                0.8572, // ￥0.012 / 1k tokens
-	"qwen-plus":                                 10,     // ￥0.14 / 1k tokens
+	// ========== 阿里云通义千问 (价格单位: ¥/1M tokens, 转为 ¥/1K tokens * RMB) ==========
+	// --- 旗舰模型 ---
+	"qwen3-max":                    0.0025 * RMB,  // ¥2.5/1M tokens (≤32K)
+	"qwen3-max-2026-01-23":         0.0025 * RMB,  // ¥2.5/1M tokens
+	"qwen3-max-preview":            0.006 * RMB,   // ¥6/1M tokens
+	"qwen-max":                     0.0024 * RMB,  // ¥2.4/1M tokens
+	"qwen-max-latest":              0.0024 * RMB,  // ¥2.4/1M tokens
+	// --- 中端模型 ---
+	"qwen-plus":                    0.0008 * RMB,  // ¥0.8/1M tokens (≤128K)
+	"qwen-plus-latest":             0.0008 * RMB,  // ¥0.8/1M tokens
+	// --- 轻量模型 ---
+	"qwen-flash":                   0.00015 * RMB, // ¥0.15/1M tokens
+	"qwen-turbo":                   0.0003 * RMB,  // ¥0.3/1M tokens
+	"qwen-turbo-latest":            0.0003 * RMB,  // ¥0.3/1M tokens
+	// --- 长文本 ---
+	"qwen-long":                    0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen-long-latest":             0.0005 * RMB,  // ¥0.5/1M tokens
+	// --- 深度研究 ---
+	"qwen-deep-research":           0.054 * RMB,   // ¥54/1M tokens
+	// --- Qwen3 开源系列 ---
+	"qwen3-235b-a22b":              0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-32b":                    0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-30b-a3b":                0.00075 * RMB, // ¥0.75/1M tokens
+	"qwen3-14b":                    0.001 * RMB,   // ¥1/1M tokens
+	"qwen3-8b":                     0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen3-4b":                     0.0003 * RMB,  // ¥0.3/1M tokens
+	"qwen3-1.7b":                   0.0003 * RMB,  // ¥0.3/1M tokens
+	"qwen3-0.6b":                   0.0003 * RMB,  // ¥0.3/1M tokens
+	// --- Qwen3 thinking/instruct 变体 ---
+	"qwen3-235b-a22b-thinking-2507":  0.002 * RMB,  // ¥2/1M tokens
+	"qwen3-235b-a22b-instruct-2507":  0.002 * RMB,  // ¥2/1M tokens
+	"qwen3-30b-a3b-thinking-2507":    0.00075 * RMB, // ¥0.75/1M tokens
+	"qwen3-30b-a3b-instruct-2507":    0.00075 * RMB, // ¥0.75/1M tokens
+	"qwen3-next-80b-a3b-thinking":    0.001 * RMB,  // ¥1/1M tokens
+	"qwen3-next-80b-a3b-instruct":    0.001 * RMB,  // ¥1/1M tokens
+	// --- Vision 主力模型 ---
+	"qwen3-vl-plus":                0.001 * RMB,   // ¥1/1M tokens
+	"qwen3-vl-flash":               0.00015 * RMB, // ¥0.15/1M tokens
+	"qwen-vl-max":                  0.0016 * RMB,  // ¥1.6/1M tokens
+	"qwen-vl-max-latest":           0.0016 * RMB,  // ¥1.6/1M tokens
+	"qwen-vl-plus":                 0.0008 * RMB,  // ¥0.8/1M tokens
+	"qwen-vl-plus-latest":          0.0008 * RMB,  // ¥0.8/1M tokens
+	"qwen-vl-ocr":                  0.005 * RMB,   // ¥5/1M tokens
+	"qwen-vl-ocr-latest":           0.0003 * RMB,  // ¥0.3/1M tokens
+	// --- Vision 开源系列 ---
+	"qwen3-vl-235b-a22b-thinking":  0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-vl-235b-a22b-instruct":  0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-vl-32b-thinking":        0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-vl-32b-instruct":        0.002 * RMB,   // ¥2/1M tokens
+	"qwen3-vl-30b-a3b-thinking":    0.00075 * RMB, // ¥0.75/1M tokens
+	"qwen3-vl-30b-a3b-instruct":    0.00075 * RMB, // ¥0.75/1M tokens
+	"qwen3-vl-8b-thinking":         0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen3-vl-8b-instruct":         0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen2.5-vl-72b-instruct":      0.016 * RMB,   // ¥16/1M tokens
+	"qwen2.5-vl-32b-instruct":      0.008 * RMB,   // ¥8/1M tokens
+	"qwen2.5-vl-7b-instruct":       0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-vl-3b-instruct":       0.0012 * RMB,  // ¥1.2/1M tokens
+	// --- Coder ---
+	"qwen3-coder-plus":             0.004 * RMB,   // ¥4/1M tokens
+	"qwen3-coder-flash":            0.001 * RMB,   // ¥1/1M tokens
+	"qwen3-coder-480b-a35b-instruct": 0.006 * RMB, // ¥6/1M tokens
+	"qwen3-coder-30b-a3b-instruct":   0.0015 * RMB, // ¥1.5/1M tokens
+	"qwen-coder-plus":              0.0035 * RMB,  // ¥3.5/1M tokens
+	"qwen-coder-plus-latest":       0.0035 * RMB,  // ¥3.5/1M tokens
+	"qwen-coder-turbo":             0.002 * RMB,   // ¥2/1M tokens
+	"qwen-coder-turbo-latest":      0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-coder-32b-instruct":   0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-coder-14b-instruct":   0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-coder-7b-instruct":    0.001 * RMB,   // ¥1/1M tokens
+	// --- Math ---
+	"qwen-math-plus":               0.004 * RMB,   // ¥4/1M tokens
+	"qwen-math-turbo":              0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-math-72b-instruct":    0.004 * RMB,   // ¥4/1M tokens
+	"qwen2.5-math-7b-instruct":     0.001 * RMB,   // ¥1/1M tokens
+	// --- Qwen2.5 开源系列 ---
+	"qwen2.5-72b-instruct":         0.004 * RMB,   // ¥4/1M tokens
+	"qwen2.5-32b-instruct":         0.002 * RMB,   // ¥2/1M tokens
+	"qwen2.5-14b-instruct":         0.001 * RMB,   // ¥1/1M tokens
+	"qwen2.5-14b-instruct-1m":      0.001 * RMB,   // ¥1/1M tokens
+	"qwen2.5-7b-instruct":          0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen2.5-7b-instruct-1m":       0.0005 * RMB,  // ¥0.5/1M tokens
+	"qwen2.5-3b-instruct":          0.0003 * RMB,  // ¥0.3/1M tokens
 	"text-embedding-v1":                         0.05,   // ￥0.0007 / 1k tokens
 	"SparkDesk-v1.1":                            1.2858, // ￥0.018 / 1k tokens
 	"SparkDesk-v2.1":                            1.2858, // ￥0.018 / 1k tokens
@@ -368,6 +448,186 @@ var defaultCompletionRatio = map[string]float64{
 	"gpt-4o-gizmo-*": 3,
 	"gpt-4-all":      2,
 	"gpt-image-1":    8,
+	// ========== 阿里云通义千问 CompletionRatio (输出价/输入价) ==========
+	// 旗舰模型
+	"qwen3-max":                      4,    // ¥10/¥2.5
+	"qwen3-max-2026-01-23":           4,
+	"qwen3-max-preview":              4,    // ¥24/¥6
+	"qwen-max":                       4,    // ¥9.6/¥2.4
+	"qwen-max-latest":                4,
+	// 中端模型
+	"qwen-plus":                      2.5,  // ¥2/¥0.8 (非思考输出)
+	"qwen-plus-latest":               2.5,
+	// 轻量模型
+	"qwen-flash":                     10,   // ¥1.5/¥0.15
+	"qwen-turbo":                     2,    // ¥0.6/¥0.3 (非思考输出)
+	"qwen-turbo-latest":              2,
+	// 长文本 & 深度研究
+	"qwen-long":                      4,    // ¥2/¥0.5
+	"qwen-long-latest":               4,
+	"qwen-deep-research":             3.019, // ¥163/¥54
+	// Qwen3 开源系列 (非思考输出)
+	"qwen3-235b-a22b":                4,    // ¥8/¥2
+	"qwen3-32b":                      4,    // ¥8/¥2
+	"qwen3-30b-a3b":                  4,    // ¥3/¥0.75
+	"qwen3-14b":                      4,    // ¥4/¥1
+	"qwen3-8b":                       4,    // ¥2/¥0.5
+	"qwen3-4b":                       4,    // ¥1.2/¥0.3
+	"qwen3-1.7b":                     4,
+	"qwen3-0.6b":                     4,
+	// Qwen3 thinking/instruct 变体
+	"qwen3-235b-a22b-thinking-2507":  10,   // ¥20/¥2 (思考输出)
+	"qwen3-235b-a22b-instruct-2507":  4,    // ¥8/¥2
+	"qwen3-30b-a3b-thinking-2507":    10,   // ¥7.5/¥0.75
+	"qwen3-30b-a3b-instruct-2507":    4,    // ¥3/¥0.75
+	"qwen3-next-80b-a3b-thinking":    10,   // ¥10/¥1
+	"qwen3-next-80b-a3b-instruct":    4,    // ¥4/¥1
+	// Vision 主力模型
+	"qwen3-vl-plus":                  10,   // ¥10/¥1
+	"qwen3-vl-flash":                 10,   // ¥1.5/¥0.15
+	"qwen-vl-max":                    2.5,  // ¥4/¥1.6
+	"qwen-vl-max-latest":             2.5,
+	"qwen-vl-plus":                   2.5,  // ¥2/¥0.8
+	"qwen-vl-plus-latest":            2.5,
+	"qwen-vl-ocr":                    1,    // ¥5/¥5
+	"qwen-vl-ocr-latest":             1.667, // ¥0.5/¥0.3
+	// Vision 开源系列
+	"qwen3-vl-235b-a22b-thinking":    10,   // ¥20/¥2
+	"qwen3-vl-235b-a22b-instruct":    4,    // ¥8/¥2
+	"qwen3-vl-32b-thinking":          10,   // ¥20/¥2
+	"qwen3-vl-32b-instruct":          4,    // ¥8/¥2
+	"qwen3-vl-30b-a3b-thinking":      10,   // ¥7.5/¥0.75
+	"qwen3-vl-30b-a3b-instruct":      4,    // ¥3/¥0.75
+	"qwen3-vl-8b-thinking":           10,   // ¥5/¥0.5
+	"qwen3-vl-8b-instruct":           4,    // ¥2/¥0.5
+	"qwen2.5-vl-72b-instruct":        3,    // ¥48/¥16
+	"qwen2.5-vl-32b-instruct":        3,    // ¥24/¥8
+	"qwen2.5-vl-7b-instruct":         2.5,  // ¥5/¥2
+	"qwen2.5-vl-3b-instruct":         3,    // ¥3.6/¥1.2
+	// Coder
+	"qwen3-coder-plus":               4,    // ¥16/¥4
+	"qwen3-coder-flash":              4,    // ¥4/¥1
+	"qwen3-coder-480b-a35b-instruct": 4,    // ¥24/¥6
+	"qwen3-coder-30b-a3b-instruct":   4,    // ¥6/¥1.5
+	"qwen-coder-plus":                2,    // ¥7/¥3.5
+	"qwen-coder-plus-latest":         2,
+	"qwen-coder-turbo":               3,    // ¥6/¥2
+	"qwen-coder-turbo-latest":        3,
+	"qwen2.5-coder-32b-instruct":     3,    // ¥6/¥2
+	"qwen2.5-coder-14b-instruct":     3,
+	"qwen2.5-coder-7b-instruct":      2,    // ¥2/¥1
+	// Math
+	"qwen-math-plus":                 3,    // ¥12/¥4
+	"qwen-math-turbo":                3,    // ¥6/¥2
+	"qwen2.5-math-72b-instruct":      3,
+	"qwen2.5-math-7b-instruct":       2,    // ¥2/¥1
+	// Qwen2.5 开源系列
+	"qwen2.5-72b-instruct":           3,    // ¥12/¥4
+	"qwen2.5-32b-instruct":           3,    // ¥6/¥2
+	"qwen2.5-14b-instruct":           3,    // ¥3/¥1
+	"qwen2.5-14b-instruct-1m":        3,
+	"qwen2.5-7b-instruct":            2,    // ¥1/¥0.5
+	"qwen2.5-7b-instruct-1m":         2,
+	"qwen2.5-3b-instruct":            3,    // ¥0.9/¥0.3
+}
+
+// ========== 阶梯计价配置 ==========
+// 阿里云部分模型按单次请求输入 Token 数量分阶梯定价
+// 价格单位: 元/百万tokens, 转为 ratio (¥/1K tokens * RMB)
+
+type PriceTier struct {
+	MaxTokens       int     // Token 阈值，0 表示无上限
+	InputRatio      float64 // 该阶梯的输入倍率 (替代 modelRatio)
+	CompletionRatio float64 // 该阶梯的输出/输入倍率 (替代 completionRatio)
+}
+
+var defaultTieredPricing = map[string][]PriceTier{
+	// qwen3-max: ≤32K / ≤128K / ≤252K
+	"qwen3-max": {
+		{MaxTokens: 32000, InputRatio: 0.0025 * RMB, CompletionRatio: 4},   // ¥2.5/10
+		{MaxTokens: 128000, InputRatio: 0.004 * RMB, CompletionRatio: 4},   // ¥4/16
+		{MaxTokens: 0, InputRatio: 0.007 * RMB, CompletionRatio: 4},        // ¥7/28
+	},
+	"qwen3-max-2026-01-23": {
+		{MaxTokens: 32000, InputRatio: 0.0025 * RMB, CompletionRatio: 4},
+		{MaxTokens: 128000, InputRatio: 0.004 * RMB, CompletionRatio: 4},
+		{MaxTokens: 0, InputRatio: 0.007 * RMB, CompletionRatio: 4},
+	},
+	// qwen3-max-preview: ≤32K / ≤128K / ≤252K
+	"qwen3-max-preview": {
+		{MaxTokens: 32000, InputRatio: 0.006 * RMB, CompletionRatio: 4},    // ¥6/24
+		{MaxTokens: 128000, InputRatio: 0.010 * RMB, CompletionRatio: 4},   // ¥10/40
+		{MaxTokens: 0, InputRatio: 0.015 * RMB, CompletionRatio: 4},        // ¥15/60
+	},
+	// qwen-plus: ≤128K / ≤256K / ≤1M (非思考输出)
+	"qwen-plus": {
+		{MaxTokens: 128000, InputRatio: 0.0008 * RMB, CompletionRatio: 2.5},  // ¥0.8/2
+		{MaxTokens: 256000, InputRatio: 0.0024 * RMB, CompletionRatio: 8.333}, // ¥2.4/20
+		{MaxTokens: 0, InputRatio: 0.0048 * RMB, CompletionRatio: 10},        // ¥4.8/48
+	},
+	"qwen-plus-latest": {
+		{MaxTokens: 128000, InputRatio: 0.0008 * RMB, CompletionRatio: 2.5},
+		{MaxTokens: 256000, InputRatio: 0.0024 * RMB, CompletionRatio: 8.333},
+		{MaxTokens: 0, InputRatio: 0.0048 * RMB, CompletionRatio: 10},
+	},
+	// qwen-flash: ≤128K / ≤256K / ≤1M
+	"qwen-flash": {
+		{MaxTokens: 128000, InputRatio: 0.00015 * RMB, CompletionRatio: 10},  // ¥0.15/1.5
+		{MaxTokens: 256000, InputRatio: 0.0006 * RMB, CompletionRatio: 10},   // ¥0.6/6
+		{MaxTokens: 0, InputRatio: 0.0012 * RMB, CompletionRatio: 10},        // ¥1.2/12
+	},
+	// qwen3-vl-plus: ≤32K / ≤128K / ≤256K
+	"qwen3-vl-plus": {
+		{MaxTokens: 32000, InputRatio: 0.001 * RMB, CompletionRatio: 10},     // ¥1/10
+		{MaxTokens: 128000, InputRatio: 0.0015 * RMB, CompletionRatio: 10},   // ¥1.5/15
+		{MaxTokens: 0, InputRatio: 0.003 * RMB, CompletionRatio: 10},         // ¥3/30
+	},
+	// qwen3-vl-flash: ≤32K / ≤128K / ≤256K
+	"qwen3-vl-flash": {
+		{MaxTokens: 32000, InputRatio: 0.00015 * RMB, CompletionRatio: 10},   // ¥0.15/1.5
+		{MaxTokens: 128000, InputRatio: 0.0003 * RMB, CompletionRatio: 10},   // ¥0.3/3
+		{MaxTokens: 0, InputRatio: 0.0006 * RMB, CompletionRatio: 10},        // ¥0.6/6
+	},
+	// qwen3-coder-plus: ≤32K / ≤128K / ≤256K / ≤1M
+	"qwen3-coder-plus": {
+		{MaxTokens: 32000, InputRatio: 0.004 * RMB, CompletionRatio: 4},      // ¥4/16
+		{MaxTokens: 128000, InputRatio: 0.006 * RMB, CompletionRatio: 4},     // ¥6/24
+		{MaxTokens: 256000, InputRatio: 0.010 * RMB, CompletionRatio: 4},     // ¥10/40
+		{MaxTokens: 0, InputRatio: 0.020 * RMB, CompletionRatio: 10},         // ¥20/200
+	},
+	// qwen3-coder-flash: ≤32K / ≤128K / ≤256K / ≤1M
+	"qwen3-coder-flash": {
+		{MaxTokens: 32000, InputRatio: 0.001 * RMB, CompletionRatio: 4},      // ¥1/4
+		{MaxTokens: 128000, InputRatio: 0.0015 * RMB, CompletionRatio: 4},    // ¥1.5/6
+		{MaxTokens: 256000, InputRatio: 0.0025 * RMB, CompletionRatio: 4},    // ¥2.5/10
+		{MaxTokens: 0, InputRatio: 0.005 * RMB, CompletionRatio: 5},          // ¥5/25
+	},
+}
+
+// GetTieredPricing 根据模型名和输入 token 数量返回阶梯计价的倍率
+// 返回: inputRatio, completionRatio, found
+func GetTieredPricing(modelName string, promptTokens int) (float64, float64, bool) {
+	tiers, ok := defaultTieredPricing[modelName]
+	if !ok {
+		return 0, 0, false
+	}
+	for _, tier := range tiers {
+		if tier.MaxTokens == 0 || promptTokens <= tier.MaxTokens {
+			return tier.InputRatio, tier.CompletionRatio, true
+		}
+	}
+	// 如果都不匹配，使用最后一个阶梯
+	last := tiers[len(tiers)-1]
+	return last.InputRatio, last.CompletionRatio, true
+}
+
+// GetTieredPricingTiers 返回模型的所有阶梯配置（用于前端展示）
+func GetTieredPricingTiers(modelName string) []PriceTier {
+	tiers, ok := defaultTieredPricing[modelName]
+	if !ok {
+		return nil
+	}
+	return tiers
 }
 
 // InitRatioSettings initializes all model related settings maps

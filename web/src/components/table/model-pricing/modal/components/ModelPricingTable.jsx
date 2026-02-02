@@ -181,6 +181,126 @@ const ModelPricingTable = ({
     );
   };
 
+  const formatTokens = (tokens) => {
+    if (tokens === 0) return '∞';
+    if (tokens >= 1000000) return `${tokens / 1000000}M`;
+    if (tokens >= 1000) return `${tokens / 1000}K`;
+    return `${tokens}`;
+  };
+
+  const renderTieredPricingTable = () => {
+    if (
+      !modelData?.tiered_pricing ||
+      modelData.tiered_pricing.length === 0
+    )
+      return null;
+
+    const firstGroup = Object.keys(usableGroup || {}).find(
+      (g) =>
+        g !== '' &&
+        g !== 'auto' &&
+        modelEnableGroups.includes(g),
+    );
+    const grpRatio =
+      firstGroup && groupRatio && groupRatio[firstGroup]
+        ? groupRatio[firstGroup]
+        : 1;
+
+    const unitDivisor = tokenUnit === 'K' ? 1000 : 1;
+    let symbol = '$';
+    if (currency === 'CNY') symbol = '¥';
+    else if (currency === 'CUSTOM') {
+      try {
+        const s = JSON.parse(localStorage.getItem('status') || '{}');
+        symbol = s?.custom_currency_symbol || '¤';
+      } catch {
+        symbol = '¤';
+      }
+    }
+
+    const tieredData = modelData.tiered_pricing.map((tier, idx) => {
+      const prevMax =
+        idx > 0 ? modelData.tiered_pricing[idx - 1].max_tokens : 0;
+      const tierInputUSD = tier.input_ratio * 2 * grpRatio;
+      const tierOutputUSD =
+        tier.input_ratio * tier.completion_ratio * 2 * grpRatio;
+      const numIn =
+        parseFloat(displayPrice(tierInputUSD).toString().replace(/[^0-9.]/g, '')) /
+        unitDivisor;
+      const numOut =
+        parseFloat(
+          displayPrice(tierOutputUSD).toString().replace(/[^0-9.]/g, ''),
+        ) / unitDivisor;
+
+      return {
+        key: idx,
+        range:
+          tier.max_tokens === 0
+            ? `>${formatTokens(prevMax)}`
+            : `${formatTokens(prevMax)}~${formatTokens(tier.max_tokens)}`,
+        inputPrice: `${symbol}${numIn.toFixed(4)}`,
+        outputPrice: `${symbol}${numOut.toFixed(4)}`,
+      };
+    });
+
+    const tieredColumns = [
+      {
+        title: t('Token范围'),
+        dataIndex: 'range',
+        render: (text) => (
+          <Tag color='white' size='small' shape='circle'>
+            {text}
+          </Tag>
+        ),
+      },
+      {
+        title: t('提示'),
+        dataIndex: 'inputPrice',
+        render: (text) => (
+          <>
+            <div className='font-semibold text-orange-600'>{text}</div>
+            <div className='text-xs text-gray-500'>
+              / {tokenUnit === 'K' ? '1K' : '1M'} tokens
+            </div>
+          </>
+        ),
+      },
+      {
+        title: t('补全'),
+        dataIndex: 'outputPrice',
+        render: (text) => (
+          <>
+            <div className='font-semibold text-orange-600'>{text}</div>
+            <div className='text-xs text-gray-500'>
+              / {tokenUnit === 'K' ? '1K' : '1M'} tokens
+            </div>
+          </>
+        ),
+      },
+    ];
+
+    return (
+      <div className='mb-4'>
+        <div className='flex items-center mb-2'>
+          <Tag color='orange' size='small'>
+            {t('阶梯计价')}
+          </Tag>
+          <span className='text-xs text-gray-500 ml-2'>
+            {t('价格随输入Token数量分段变化')}
+          </span>
+        </div>
+        <Table
+          dataSource={tieredData}
+          columns={tieredColumns}
+          pagination={false}
+          size='small'
+          bordered={false}
+          className='!rounded-lg'
+        />
+      </div>
+    );
+  };
+
   return (
     <Card className='!rounded-2xl shadow-sm border-0'>
       <div className='flex items-center mb-4'>
@@ -209,6 +329,7 @@ const ModelPricingTable = ({
           ))}
         </div>
       )}
+      {renderTieredPricingTable()}
       {renderGroupPriceTable()}
     </Card>
   );

@@ -670,6 +670,27 @@ export const calculateModelPrice = ({
         symbol = '¤';
       }
     }
+    // 阶梯计价
+    let tieredPrices = null;
+    if (record.tiered_pricing && record.tiered_pricing.length > 0) {
+      tieredPrices = record.tiered_pricing.map((tier) => {
+        const tierInputUSD = tier.input_ratio * 2 * usedGroupRatio;
+        const tierOutputUSD =
+          tier.input_ratio * tier.completion_ratio * 2 * usedGroupRatio;
+        const numIn =
+          parseFloat(displayPrice(tierInputUSD).replace(/[^0-9.]/g, '')) /
+          unitDivisor;
+        const numOut =
+          parseFloat(displayPrice(tierOutputUSD).replace(/[^0-9.]/g, '')) /
+          unitDivisor;
+        return {
+          maxTokens: tier.max_tokens,
+          inputPrice: `${symbol}${numIn.toFixed(precision)}`,
+          outputPrice: `${symbol}${numOut.toFixed(precision)}`,
+        };
+      });
+    }
+
     return {
       inputPrice: `${symbol}${numInput.toFixed(precision)}`,
       completionPrice: `${symbol}${numCompletion.toFixed(precision)}`,
@@ -677,6 +698,7 @@ export const calculateModelPrice = ({
       isPerToken: true,
       usedGroup,
       usedGroupRatio,
+      tieredPrices,
     };
   }
 
@@ -713,6 +735,17 @@ export const formatPriceInfo = (priceData, t) => {
         <span style={{ color: 'var(--semi-color-text-1)' }}>
           {t('输出')} {priceData.completionPrice}/{priceData.unitLabel}
         </span>
+        {priceData.tieredPrices && (
+          <span
+            style={{
+              color: 'var(--semi-color-warning)',
+              fontSize: '10px',
+              fontWeight: 600,
+            }}
+          >
+            {t('阶梯计价')}
+          </span>
+        )}
       </>
     );
   }
