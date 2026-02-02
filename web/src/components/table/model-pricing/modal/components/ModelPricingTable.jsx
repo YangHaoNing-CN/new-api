@@ -193,8 +193,8 @@ const ModelPricingTable = ({
     );
   };
 
-  const formatTokens = (tokens) => {
-    if (tokens === 0) return '∞';
+  const formatTokens = (tokens, isMax = false) => {
+    if (tokens === 0) return isMax ? '∞' : '0';
     if (tokens >= 1000000) return `${tokens / 1000000}M`;
     if (tokens >= 1000) return `${tokens / 1000}K`;
     return `${tokens}`;
@@ -249,8 +249,8 @@ const ModelPricingTable = ({
           ratio: grpRatio,
           range:
             tier.max_tokens === 0
-              ? `>${formatTokens(prevMax)}`
-              : `${formatTokens(prevMax)}~${formatTokens(tier.max_tokens)}`,
+              ? `>${formatTokens(prevMax, false)}`
+              : `${formatTokens(prevMax, false)}~${formatTokens(tier.max_tokens, true)}`,
           inputPrice: `${symbol}${numIn.toFixed(4)}`,
           outputPrice: `${symbol}${numOut.toFixed(4)}`,
         });
@@ -261,28 +261,27 @@ const ModelPricingTable = ({
       {
         title: t('分组'),
         dataIndex: 'group',
-        render: (text) => (
+        render: (text, record) => (
           <Tag color='white' size='small' shape='circle'>
-            {text}
-            {t('分组')}
+            {record.group}{t('分组')}
           </Tag>
         ),
       },
       {
         title: t('Token范围'),
         dataIndex: 'range',
-        render: (text) => (
-          <Tag color='white' size='small' shape='circle'>
-            {text}
+        render: (text, record) => (
+          <Tag color='cyan' size='small' shape='circle'>
+            {record.range}
           </Tag>
         ),
       },
       {
         title: t('提示'),
         dataIndex: 'inputPrice',
-        render: (text) => (
+        render: (text, record) => (
           <>
-            <div className='font-semibold text-orange-600'>{text}</div>
+            <div className='font-semibold text-orange-600'>{record.inputPrice}</div>
             <div className='text-xs text-gray-500'>
               / {tokenUnit === 'K' ? '1K' : '1M'} tokens
             </div>
@@ -292,9 +291,9 @@ const ModelPricingTable = ({
       {
         title: t('补全'),
         dataIndex: 'outputPrice',
-        render: (text) => (
+        render: (text, record) => (
           <>
-            <div className='font-semibold text-orange-600'>{text}</div>
+            <div className='font-semibold text-orange-600'>{record.outputPrice}</div>
             <div className='text-xs text-gray-500'>
               / {tokenUnit === 'K' ? '1K' : '1M'} tokens
             </div>
