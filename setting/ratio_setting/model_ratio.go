@@ -749,17 +749,54 @@ func GetModelRatio(name string) (float64, bool, string) {
 
 	name = FormatMatchingModelName(name)
 
+	// 1. 精确匹配优先
 	ratio, ok := modelRatioMap[name]
-	if !ok {
-		if strings.HasSuffix(name, CompactModelSuffix) {
-			if wildcardRatio, ok := modelRatioMap[CompactWildcardModelKey]; ok {
-				return wildcardRatio, true, name
-			}
-			return 0, true, name
-		}
-		return 37.5, operation_setting.SelfUseModeEnabled, name
+	if ok {
+		return ratio, true, name
 	}
-	return ratio, true, name
+
+	// 2. 通配符匹配 (支持 xxx* 格式)
+	if wildcardRatio, matched := matchWildcardRatio(name, modelRatioMap); matched {
+		return wildcardRatio, true, name
+	}
+
+	// 3. Compact 模型后缀匹配
+	if strings.HasSuffix(name, CompactModelSuffix) {
+		if wildcardRatio, ok := modelRatioMap[CompactWildcardModelKey]; ok {
+			return wildcardRatio, true, name
+		}
+		return 0, true, name
+	}
+
+	// 4. 默认倍率
+	return 37.5, operation_setting.SelfUseModeEnabled, name
+}
+
+// matchWildcardRatio 匹配通配符倍率配置
+// 支持格式: "gpt-5*" 匹配 "gpt-5", "gpt-5.2", "gpt-5-mini" 等
+// 返回: 倍率, 是否匹配
+func matchWildcardRatio(name string, ratioMap map[string]float64) (float64, bool) {
+	var bestMatch string
+	var bestRatio float64
+
+	for pattern, ratio := range ratioMap {
+		if !strings.HasSuffix(pattern, "*") {
+			continue
+		}
+		prefix := strings.TrimSuffix(pattern, "*")
+		if strings.HasPrefix(name, prefix) {
+			// 选择最长匹配的前缀 (更精确的匹配优先)
+			if len(prefix) > len(bestMatch) {
+				bestMatch = prefix
+				bestRatio = ratio
+			}
+		}
+	}
+
+	if bestMatch != "" {
+		return bestRatio, true
+	}
+	return 0, false
 }
 
 func DefaultModelRatio2JSONString() string {
@@ -824,18 +861,25 @@ func GetCompletionRatio(name string) float64 {
 
 	name = FormatMatchingModelName(name)
 
+	// 1. 精确匹配（含/的模型名优先）
 	if strings.Contains(name, "/") {
 		if ratio, ok := CompletionRatio[name]; ok {
 			return ratio
 		}
 	}
-	hardCodedRatio, contain := getHardcodedCompletionModelRatio(name)
-	if contain {
-		return hardCodedRatio
-	}
+
+	// 2. 精确匹配
 	if ratio, ok := CompletionRatio[name]; ok {
 		return ratio
 	}
+
+	// 3. 通配符匹配
+	if wildcardRatio, matched := matchWildcardRatio(name, CompletionRatio); matched {
+		return wildcardRatio
+	}
+
+	// 4. 硬编码默认值
+	hardCodedRatio, _ := getHardcodedCompletionModelRatio(name)
 	return hardCodedRatio
 }
 
